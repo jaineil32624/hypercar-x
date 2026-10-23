@@ -198,6 +198,8 @@ func _build_car() -> void:
 	car.position = Vector3(0, 0.6, 0)
 	car.center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	car.center_of_mass = Vector3(0, 0.35, 0)
+	car.linear_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
+	car.linear_damp = 0.0  # aero drag is modelled explicitly
 	add_child(car)
 
 	var shape := CollisionShape3D.new()
@@ -217,8 +219,8 @@ func _build_car() -> void:
 	_collect(inst)
 
 	# physics wheels (no meshes; GLB wheels are the visuals)
-	var positions := {"FL": Vector3(0.855, 0.5, 1.39), "FR": Vector3(-0.855, 0.5, 1.39),
-		"RL": Vector3(0.83, 0.5, -1.39), "RR": Vector3(-0.83, 0.5, -1.39)}
+	var positions := {"FL": Vector3(0.855, 0.56, 1.39), "FR": Vector3(-0.855, 0.56, 1.39),
+		"RL": Vector3(0.83, 0.56, -1.39), "RR": Vector3(-0.83, 0.56, -1.39)}
 	for tag in ["FL", "FR", "RL", "RR"]:
 		var w := VehicleWheel3D.new()
 		w.name = "W_" + tag
@@ -226,7 +228,7 @@ func _build_car() -> void:
 		w.wheel_radius = 0.355
 		w.wheel_rest_length = 0.18
 		w.suspension_travel = 0.12
-		w.suspension_stiffness = 85.0
+		w.suspension_stiffness = 110.0
 		w.damping_compression = 2.2
 		w.damping_relaxation = 3.0
 		w.suspension_max_force = 14000.0
