@@ -294,7 +294,7 @@ func _apply_params() -> void:
 		"r": float(b["wheel_d"]) / 2.0,
 		"mu": float(b["mu"]) + ty["mu"],
 		"cd": float(b["cd"]) + ae["cd"],
-		"cl": max(0.0, float(b["cl"]) + ae["cl"]),
+		"cl": maxf(0.0, float(b["cl"]) + ae["cl"]),
 		"area": float(b["area"]),
 	}
 	car.mass = P["mass"]
@@ -414,8 +414,8 @@ func _physics_process(dt: float) -> void:
 
 	# tractive force = min(torque-limited, power-limited), same as the Python model
 	var f_torque: float = P["torque"] * P["gear"] * 0.92 / P["r"]
-	var f_power: float = P["power"] * 0.92 / max(abs(v), 1.0)
-	var f := min(f_torque, f_power)
+	var f_power: float = P["power"] * 0.92 / maxf(absf(v), 1.0)
+	var f := minf(f_torque, f_power)
 	if brk > 0.0 and v > 1.0:
 		car.engine_force = 0.0
 		car.brake = 0.025 * P["mass"] * P["mu"]
@@ -444,7 +444,7 @@ func _physics_process(dt: float) -> void:
 		marks["0-60 mph"] = t_run
 	if not marks.has("0-100 mph") and mph >= 100:
 		marks["0-100 mph"] = t_run
-	if not marks.has("1/4 mile") and car.global_position.z >= 402.3 and abs(car.global_position.x) < 8:
+	if not marks.has("1/4 mile") and car.global_position.z >= 402.3 and absf(car.global_position.x) < 8:
 		marks["1/4 mile"] = t_run
 
 	if autotest:
@@ -463,7 +463,7 @@ func _physics_process(dt: float) -> void:
 		(s as Node3D).rotation.y = steer
 	if wing and wing.visible:
 		var target := -0.66 if (brk > 0.0 and v > 15.0) else (-0.07 if v > 45.0 else -0.24)
-		wing.rotation.z = lerp(wing.rotation.z, target, 0.1)
+		wing.rotation.z = lerpf(wing.rotation.z, target, 0.1)
 
 	# smoke on wheelspin / hard slides
 	var skid := false
@@ -487,7 +487,7 @@ func _process(dt: float) -> void:
 	var look := car.global_position + car.global_basis.z * (12.0 if cam_mode == 1 else 0.0) + Vector3.UP * 0.8
 	cam.look_at(look, Vector3.UP)
 	var speed := car.linear_velocity.length()
-	cam.fov = lerp(cam.fov, 65.0 + min(25.0, speed * 0.25), 0.05)
+	cam.fov = lerpf(cam.fov, 65.0 + minf(25.0, speed * 0.25), 0.05)
 
 	hud_speed.text = "%d\nkm/h" % int(speed * 3.6)
 	hud_info.text = "HYPERCAR-X  %s · %s  ·  %d kg · %d kW" % [variant_keys[vi], V[variant_keys[vi]]["name"], int(P["mass"]), int(P["power"] / 1000.0)]
