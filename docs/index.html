@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HYPERCAR-X Drive Simulator</title>
+<style>
+:root{--bg:#07090d;--panel:rgba(12,16,24,.82);--line:#22303f;--txt:#dfe8f2;--dim:#7f93a8;--acc:#36d3c4;--warn:#ff8a3d}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;overflow:hidden}
+#c{position:fixed;inset:0}
+.hud{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;backdrop-filter:blur(6px)}
+#top{top:12px;left:12px;max-width:330px}#top h1{margin:0 0 4px;font-size:15px;letter-spacing:.12em;color:var(--acc)}
+#tele{top:12px;right:12px;min-width:220px}.row{display:flex;justify-content:space-between;gap:16px}.row b{color:var(--acc);font-weight:600}
+#speed{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);text-align:center}
+#speed .v{font-size:46px;font-weight:700;line-height:1}#speed .u{color:var(--dim)}
+select,button{background:#101824;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
+.bar{height:6px;background:#162232;border-radius:3px;overflow:hidden;margin:3px 0 6px}.bar i{display:block;height:100%;background:var(--acc)}
+#touch{position:fixed;bottom:16px;right:16px;display:none;gap:8px}#touch button{width:62px;height:62px;font-size:20px}
+@media (pointer:coarse){#touch{display:grid;grid-template-columns:repeat(3,62px)}}
+@media (max-width:640px){#tele{top:auto;bottom:96px;right:12px}#top{max-width:calc(100% - 24px)}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top" class="hud"><h1>HYPERCAR-X</h1>
+ <div style="color:var(--dim)">Physics driven by the same parameter table as the engineering model.</div>
+ <div style="margin:8px 0"><select id="variant"></select> <button id="reset">Reset</button> <button id="launch">Launch test</button></div>
+ <div style="color:var(--dim)">W/↑ throttle · S/↓ brake · A D steer · Space handbrake · C camera</div>
+</div>
+<div id="tele" class="hud"></div>
+<div id="speed" class="hud"><div class="v" id="sv">0</div><div class="u">km/h · <span id="gear">D</span></div></div>
+<div id="touch"><span></span><button data-k="up">▲</button><span></span><button data-k="left">◀</button><button data-k="down">▼</button><button data-k="right">▶</button></div>
+<script src="variants.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const V = window.VARIANTS, g = 9.81, RHO = 1.225;
+const sel = document.getElementById('variant');
+for (const k in V) sel.add(new Option(`${k} · ${V[k].name}`, k));
+sel.value = 'C';
+
+// ---------- scene
+const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('c'), antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0e14); scene.fog = new THREE.Fog(0x0a0e14, 120, 600);
+const cam = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
+scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x1a1208, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(60, 120, 40); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, {left: -60, right: 60, top: 60, bottom: -60});
+scene.add(sun, sun.target);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshStandardMaterial({color: 0x10151c, roughness: 1}));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+scene.add(new THREE.GridHelper(4000, 400, 0x1d2a38, 0x141c26));
+// test track: oval of cones + a long straight with 402 m marker
+const coneM = new THREE.MeshStandardMaterial({color: 0xff8a3d});
+for (let i = 0; i < 80; i++) { const a = i / 80 * Math.PI * 2;
+  for (const r of [90, 108]) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.8, 8), coneM);
+    c.position.set(Math.cos(a) * r * 1.8, 0.4, Math.sin(a) * r + 200); scene.add(c); } }
+const strip = new THREE.Mesh(new THREE.PlaneGeometry(14, 800), new THREE.MeshStandardMaterial({color: 0x1a222c}));
+strip.rotation.x = -Math.PI / 2; strip.position.set(0, 0.01, -400); scene.add(strip);
+const qm = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 1), new THREE.MeshBasicMaterial({color: 0x36d3c4}));
+qm.position.set(0, 0.03, -402.3); scene.add(qm);
+
+// ---------- car built from parameters
+let car, wheels = [], P, M;
+function buildCar() {
+  if (car) scene.remove(car);
+  const v = V[sel.value]; P = v.p; M = v.mass;
+  car = new THREE.Group(); wheels = [];
+  const L = P.Vehicle_Length, W = P.Vehicle_Width, H = P.Vehicle_Height, r = P.Wheel_Diameter / 2, gc = P.Ground_Clearance;
+  const paint = new THREE.MeshStandardMaterial({color: 0x1fb5a8, metalness: .6, roughness: .3});
+  const carbon = new THREE.MeshStandardMaterial({color: 0x111418, metalness: .3, roughness: .6});
+  const glass = new THREE.MeshStandardMaterial({color: 0x0b1622, metalness: .9, roughness: .1});
+  // body: extruded side profile
+  const s = new THREE.Shape(), bh = H - gc;
+  s.moveTo(-L / 2, 0); s.lineTo(L / 2, 0); s.lineTo(L / 2, bh * .35);
+  s.quadraticCurveTo(L * .22, bh * .55, L * .12, bh * .62); s.quadraticCurveTo(0, bh * 1.02, -L * .18, bh * .98);
+  s.quadraticCurveTo(-L * .38, bh * .72, -L / 2, bh * .55); s.lineTo(-L / 2, 0);
+  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(s, {depth: W * .92, bevelEnabled: true, bevelSize: .06, bevelThickness: .08, bevelSegments: 3}), paint);
+  body.rotation.y = Math.PI / 2; body.position.set(-W * .46, gc, 0); body.castShadow = true; car.add(body);
+  const canopy = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), glass);
+  canopy.scale.set(W * .32, bh * .32, L * .2); canopy.position.set(0, gc + bh * .7, -L * .02); car.add(canopy);
+  const diff = new THREE.Mesh(new THREE.BoxGeometry(W * .8, .08, .5), carbon); diff.position.set(0, gc + .05, L / 2 - .2); car.add(diff);
+  if (P.Lift_Coefficient > .5) { // rear wing scaled with downforce coefficient
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(W * .9, .03, .25 + P.Lift_Coefficient * .12), carbon);
+    wing.position.set(0, H + .05 + P.Lift_Coefficient * .08, L / 2 - .25); wing.rotation.x = -.12; car.add(wing);
+    for (const sx of [-1, 1]) { const st = new THREE.Mesh(new THREE.BoxGeometry(.04, .3 + P.Lift_Coefficient * .08, .1), carbon);
+      st.position.set(sx * W * .3, H - .1, L / 2 - .25); car.add(st); } }
+  const lightM = new THREE.MeshBasicMaterial({color: 0xbff8ff}), tailM = new THREE.MeshBasicMaterial({color: 0xff2a4a});
+  const hl = new THREE.Mesh(new THREE.BoxGeometry(W * .7, .04, .04), lightM); hl.position.set(0, gc + bh * .33, -L / 2 - .02); car.add(hl);
+  const tl = new THREE.Mesh(new THREE.BoxGeometry(W * .85, .05, .04), tailM); tl.position.set(0, gc + bh * .5, L / 2 + .02); car.add(tl);
+  const tireM = new THREE.MeshStandardMaterial({color: 0x15171a, roughness: .9}), rimM = new THREE.MeshStandardMaterial({color: 0xb8c2cc, metalness: .9, roughness: .25});
+  const T = P.Track_Width_Front;
+  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const pivot = new THREE.Group(); pivot.position.set(x * T / 2, r, z * P.Wheelbase / 2);
+    const w = new THREE.Group();
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(r, r, P.Wheel_Width, 28), tireM); tire.rotation.z = Math.PI / 2; tire.castShadow = true;
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * .68, r * .68, P.Wheel_Width + .01, 10), rimM); rim.rotation.z = Math.PI / 2;
+    w.add(tire, rim); pivot.add(w); car.add(pivot); wheels.push({pivot, w, front: z < 0});
+  }
+  scene.add(car); reset();
+}
+
+// ---------- vehicle dynamics (bicycle model, longitudinal identical to Python model)
+const st = {x: 0, z: 0, yaw: 0, v: 0, vy: 0, r: 0, steer: 0, t: 0, dist: 0, marks: {}, launch: false, ax: 0, ay: 0};
+function reset() { Object.assign(st, {x: 0, z: 0, yaw: 0, v: 0, vy: 0, r: 0, steer: 0, t: 0, dist: 0, marks: {}, launch: false}); }
+const keys = {};
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (e.key === 'c') camMode = (camMode + 1) % 3; if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault(); });
+addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+document.querySelectorAll('#touch button').forEach(b => {
+  const k = {up: 'arrowup', down: 'arrowdown', left: 'arrowleft', right: 'arrowright'}[b.dataset.k];
+  b.addEventListener('pointerdown', () => keys[k] = true); b.addEventListener('pointerup', () => keys[k] = false); b.addEventListener('pointerleave', () => keys[k] = false);
+});
+sel.onchange = buildCar; document.getElementById('reset').onclick = reset;
+document.getElementById('launch').onclick = () => { reset(); st.launch = true; };
+
+function step(dt) {
+  const m = M, L = P.Wheelbase, r = P.Wheel_Diameter / 2, a = L * .5, b = L * .5;
+  const thr = st.launch || keys['w'] || keys['arrowup'] ? 1 : 0, brk = keys['s'] || keys['arrowdown'] ? 1 : 0;
+  const steerIn = (keys['a'] || keys['arrowleft'] ? 1 : 0) - (keys['d'] || keys['arrowright'] ? 1 : 0);
+  const maxSteer = 0.55 / (1 + st.v * st.v / 900); // speed-sensitive steering
+  st.steer += (steerIn * maxSteer - st.steer) * Math.min(1, dt * 6);
+  const v = Math.max(st.v, 0.1), q = .5 * RHO * st.v * st.v;
+  const drag = q * P.Drag_Coefficient * P.Frontal_Area, down = q * P.Lift_Coefficient * P.Frontal_Area;
+  const Fz = m * g + down, mu = P.Tire_Mu * (keys[' '] ? .6 : 1);
+  const fT = P.Motor_Torque * P.Gear_Ratio * P.Driveline_Eff / r, fP = P.Motor_Power * 1000 * P.Driveline_Eff / v;
+  const vmax = P.Motor_Max_RPM * 2 * Math.PI / 60 / P.Gear_Ratio * r;
+  let Fx = thr * (st.v < vmax ? Math.min(fT, fP) : 0) - brk * mu * .95 * Fz * Math.sign(st.v || 1);
+  // lateral tyres: linear with saturation
+  const Cf = 18 * Fz / 2, Cr = 20 * Fz / 2;
+  const af = Math.atan2(st.vy + a * st.r, v) - st.steer, ar = Math.atan2(st.vy - b * st.r, v);
+  let Fyf = -Cf * af, Fyr = -Cr * ar;
+  const lim = mu * Fz / 2; Fyf = Math.max(-lim, Math.min(lim, Fyf)); Fyr = Math.max(-lim, Math.min(lim, Fyr));
+  // friction circle on drive force
+  const fxLim = Math.sqrt(Math.max(0, (mu * Fz) ** 2 - (Fyf + Fyr) ** 2)); Fx = Math.max(-fxLim, Math.min(fxLim, Fx));
+  Fx -= drag + P.Rolling_Resistance * m * g * Math.sign(st.v);
+  const Iz = m * L * L * .35;
+  st.ax = Fx / (m * 1.04); st.ay = (Fyf + Fyr) / m;
+  st.v += st.ax * dt; if (brk && st.v < 0.3 && !thr) st.v = Math.max(0, st.v);
+  if (st.v < 0 && !thr) st.v = 0;
+  st.vy += (st.ay - st.v * st.r) * dt; st.r += (a * Fyf - b * Fyr) / Iz * dt;
+  if (st.v < 1) { st.vy *= .9; st.r *= .9; }
+  st.yaw += st.r * dt;
+  const sn = Math.sin(st.yaw), cs = Math.cos(st.yaw);
+  st.x += (-sn * st.v + cs * st.vy) * dt; st.z += (-cs * st.v - sn * st.vy) * dt;
+  st.dist += Math.abs(st.v) * dt; if (st.v > .2 || thr) st.t += dt;
+  const mph = st.v / .44704, mk = st.marks;
+  if (!mk['0-60 mph'] && mph >= 60) mk['0-60 mph'] = st.t.toFixed(2) + ' s';
+  if (!mk['0-100 mph'] && mph >= 100) mk['0-100 mph'] = st.t.toFixed(2) + ' s';
+  if (!mk['¼ mile'] && st.dist >= 402.336) { mk['¼ mile'] = st.t.toFixed(2) + ' s @ ' + mph.toFixed(0) + ' mph'; st.launch = false; }
+  return {drag, down, Fx};
+}
+
+// ---------- camera + loop
+let camMode = 0; const camPos = new THREE.Vector3(0, 4, 10);
+function resize() { renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+const tele = document.getElementById('tele'); let last = performance.now(), acc = 0, f = {};
+function bar(label, val, max, unit) { return `<div class="row"><span>${label}</span><b>${val.toFixed(0)} ${unit}</b></div><div class="bar"><i style="width:${Math.min(100, Math.abs(val) / max * 100)}%"></i></div>`; }
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now; acc += dt;
+  while (acc > 1 / 240) { f = step(1 / 240); acc -= 1 / 240; }
+  car.position.set(st.x, 0, st.z); car.rotation.y = st.yaw;
+  car.rotation.z = Math.max(-.05, Math.min(.05, -st.ay / g * .025)); car.rotation.x = Math.max(-.04, Math.min(.04, st.ax / g * .02));
+  for (const w of wheels) { w.w.rotation.x -= st.v * dt / (P.Wheel_Diameter / 2); if (w.front) w.pivot.rotation.y = st.steer; }
+  const back = new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw));
+  const target = camMode === 0 ? new THREE.Vector3(st.x, 2.2, st.z).addScaledVector(back, 7.5)
+    : camMode === 1 ? new THREE.Vector3(st.x, 1.1, st.z).addScaledVector(back, -.2) : new THREE.Vector3(st.x + 14, 6, st.z + 14);
+  camPos.lerp(target, camMode === 1 ? 1 : .08); cam.position.copy(camPos);
+  cam.lookAt(camMode === 1 ? new THREE.Vector3(st.x, 1, st.z).addScaledVector(back, -10) : new THREE.Vector3(st.x, .8, st.z));
+  sun.position.set(st.x + 60, 120, st.z + 40); sun.target.position.set(st.x, 0, st.z);
+  document.getElementById('sv').textContent = Math.abs(st.v * 3.6).toFixed(0);
+  document.getElementById('gear').textContent = st.v < 0 ? 'R' : 'D';
+  const mk = Object.entries(st.marks).map(([k, v]) => `<div class="row"><span>${k}</span><b>${v}</b></div>`).join('');
+  tele.innerHTML = `<div class="row"><span>Mass</span><b>${M.toFixed(0)} kg</b></div>
+   <div class="row"><span>Power</span><b>${P.Motor_Power} kW</b></div>
+   ${bar('Long. accel', st.ax / g * 100, 200, 'cg')}${bar('Lateral', st.ay / g * 100, 300, 'cg')}
+   ${bar('Drag', f.drag || 0, 15000, 'N')}${bar('Downforce', f.down || 0, 15000, 'N')}
+   <div class="row"><span>Distance</span><b>${st.dist.toFixed(0)} m</b></div>${mk}`;
+  renderer.render(scene, cam); requestAnimationFrame(loop);
+}
+buildCar(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

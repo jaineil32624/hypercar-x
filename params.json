@@ -1,0 +1,39 @@
+{
+  "_doc": "HYPERCAR-X master parameter table. SI units (m, kg, kW, N·m, N/m, kWh). Variants override base values.",
+  "base": {
+    "Vehicle_Length": 4.62, "Vehicle_Width": 2.03, "Vehicle_Height": 1.14,
+    "Wheelbase": 2.78, "Track_Width_Front": 1.71, "Track_Width_Rear": 1.66,
+    "Ground_Clearance": 0.105, "Wheel_Diameter": 0.71, "Wheel_Width": 0.305,
+    "Chassis_Thickness": 0.0045, "Tub_Section_Height": 0.42,
+    "Motor_Count": 4, "Motor_Power": 1100, "Motor_Torque": 1600, "Motor_Max_RPM": 21000,
+    "Motor_Specific_Power": 9.5, "Gear_Ratio": 8.2, "Driveline_Eff": 0.92,
+    "Battery_Capacity": 110, "Pack_Specific_Energy": 0.21,
+    "Suspension_Travel": 0.11, "Spring_Rate": 160000, "Motion_Ratio": 0.62, "Damping_Ratio": 0.32, "ARB_Ratio": 0.6,
+    "Brake_Disc_Diameter": 0.41, "Brake_Disc_Material": "carbon-ceramic", "Brake_Utilisation": 0.95, "Regen_Fraction": 0.35,
+    "Drag_Coefficient": 0.29, "Lift_Coefficient": 0.85, "Frontal_Area": 1.92,
+    "Tire_Mu": 1.35, "Rolling_Resistance": 0.011, "Aero_Package_Mass": 28,
+    "Passengers": 2, "Autonomy_Level": 2
+  },
+  "variants": {
+    "A": {"name": "Urban Performance", "overrides": {
+      "Motor_Count": 2, "Motor_Power": 450, "Motor_Torque": 900, "Battery_Capacity": 85,
+      "Ground_Clearance": 0.13, "Wheel_Diameter": 0.68, "Lift_Coefficient": 0.15, "Drag_Coefficient": 0.26,
+      "Brake_Disc_Material": "iron", "Brake_Disc_Diameter": 0.38, "Tire_Mu": 1.05, "Spring_Rate": 95000,
+      "Suspension_Travel": 0.14, "Aero_Package_Mass": 6, "Passengers": 4, "Vehicle_Height": 1.24}},
+    "B": {"name": "Track Hypercar", "overrides": {
+      "Motor_Power": 1250, "Motor_Torque": 1750, "Battery_Capacity": 70, "Ground_Clearance": 0.085,
+      "Lift_Coefficient": 2.1, "Drag_Coefficient": 0.42, "Tire_Mu": 1.55, "Spring_Rate": 230000,
+      "Suspension_Travel": 0.08, "Aero_Package_Mass": 46, "Damping_Ratio": 0.4, "ARB_Ratio": 0.9}},
+    "C": {"name": "Electric Hypercar", "overrides": {}},
+    "D": {"name": "Off-Road Adventure", "overrides": {
+      "Motor_Power": 620, "Motor_Torque": 1500, "Battery_Capacity": 120, "Ground_Clearance": 0.28,
+      "Wheel_Diameter": 0.80, "Wheel_Width": 0.29, "Lift_Coefficient": 0.0, "Drag_Coefficient": 0.38,
+      "Frontal_Area": 2.45, "Tire_Mu": 0.95, "Spring_Rate": 70000, "Suspension_Travel": 0.30,
+      "Brake_Disc_Material": "iron", "Brake_Disc_Diameter": 0.38, "Vehicle_Height": 1.52, "Aero_Package_Mass": 0,
+      "Passengers": 4, "Rolling_Resistance": 0.016, "Chassis_Thickness": 0.0055}},
+    "E": {"name": "Autonomous Future Edition (2035)", "overrides": {
+      "Motor_Power": 800, "Motor_Torque": 1300, "Battery_Capacity": 130, "Pack_Specific_Energy": 0.32,
+      "Drag_Coefficient": 0.21, "Lift_Coefficient": 0.6, "Tire_Mu": 1.25, "Autonomy_Level": 4,
+      "Passengers": 4, "Vehicle_Height": 1.20, "Aero_Package_Mass": 18}}
+  }
+}
