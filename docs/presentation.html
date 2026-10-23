@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HYPERCAR-X Engineering Review</title>
+<style>
+:root{--bg:#06090d;--card:#0e151e;--line:#1e2a38;--txt:#e3ebf3;--dim:#8296aa;--acc:#36d3c4;--hot:#ff8a3d;--good:#5ee08a}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:16px/1.45 "Segoe UI",system-ui,sans-serif;overflow:hidden}
+.deck{height:100%;display:flex;transition:transform .7s cubic-bezier(.7,0,.2,1)}
+section{flex:0 0 100vw;height:100vh;padding:5vh 6vw;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+h1{font-size:clamp(34px,6vw,76px);margin:0;letter-spacing:.06em;background:linear-gradient(90deg,#fff,var(--acc));-webkit-background-clip:text;color:transparent}
+h2{font-size:clamp(24px,3.4vw,42px);margin:0 0 .4em}h2 small{display:block;font-size:.4em;color:var(--acc);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.4em}
+.k{color:var(--acc)}.dim{color:var(--dim)}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat b{display:block;font-size:clamp(24px,3vw,40px);color:var(--acc);font-variant-numeric:tabular-nums}.stat span{color:var(--dim);font-size:13px}
+img,video{max-width:100%;border-radius:12px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:clamp(11px,1.1vw,14px)}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left;color:var(--dim)}th{color:var(--acc);font-weight:600}
+.eq{font-family:Cambria,Georgia,serif;font-style:italic;font-size:1.1em;color:#fff}
+.pro{color:var(--good)}.con{color:var(--hot)}
+ul{margin:.3em 0;padding-left:1.1em}li{margin:.25em 0}
+/* entrance animations */
+section .a{opacity:0;transform:translateY(24px);transition:all .7s cubic-bezier(.2,.8,.2,1)}
+section.on .a{opacity:1;transform:none}
+section.on .a:nth-child(2){transition-delay:.1s}section.on .a:nth-child(3){transition-delay:.2s}section.on .a:nth-child(4){transition-delay:.3s}section.on .a:nth-child(5){transition-delay:.4s}
+.bar{height:10px;border-radius:5px;background:#132030;overflow:hidden}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#7af);transition:width 1.2s .3s}
+section.on .bar i{width:var(--w)}
+#bg{position:fixed;inset:0;z-index:-1;opacity:.5}
+nav{position:fixed;bottom:14px;right:18px;color:var(--dim);font-size:13px;display:flex;gap:10px;align-items:center}
+nav button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+#prog{position:fixed;top:0;left:0;height:3px;background:var(--acc);transition:width .6s}
+.flow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.flow .card{flex:1;min-width:120px;text-align:center}.flow i{color:var(--acc);font-style:normal}
+@media (max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}section{padding:4vh 16px;justify-content:flex-start;overflow:auto}}
+</style></head><body>
+<canvas id="bg"></canvas><div id="prog"></div>
+<div class="deck" id="deck">
+
+<section><div class="a dim" style="letter-spacing:.3em">ENGINEERING REVIEW · CONCEPT PROGRAM</div>
+<h1 class="a">HYPERCAR-X</h1>
+<p class="a" style="font-size:1.3em;max-width:760px">A parametric quad-motor electric hypercar platform: one parameter table drives the CAD model, the physics, the simulator and every number in this deck.</p>
+<p class="a dim">Jaineil Rana · github.com/jaineil32624/hypercar-x</p></section>
+
+<section><h2 class="a"><small>Hero render</small>Modelled, textured &amp; animated in Blender 5.2</h2>
+<div class="grid g2 a" style="align-items:center"><img src="img/render_f070.png" alt="Blender render of HYPERCAR-X">
+<div><ul><li>Lofted super-ellipse body (48 sections × 28) with wheel-arch carving, subdivision + weighted normals</li>
+<li>Hierarchical rig: root → body rig (pitch / roll / heave) → suspension → steer → spin per corner</li>
+<li>Active rear wing on its own pivot: DRS flat at speed, 38° air-brake under braking</li>
+<li>300-frame drive animation: launch, squat, brake dive, steer, tracking camera with DoF</li></ul></div></div></section>
+
+<section><h2 class="a"><small>Animation</small>Launch → brake → turn-in</h2>
+<video class="a" src="img/hypercar_x_drive.mp4" autoplay muted loop playsinline style="max-height:66vh"></video></section>
+
+<section><h2 class="a"><small>Materials</small>Advanced procedural shading → baked PBR</h2>
+<div class="grid g3">
+<div class="card a"><b class="k">Pearl flake paint</b><br><span class="dim">Layer-weight colour shift (teal → deep blue), 1800-scale Voronoi metal flakes on base normal, noise orange-peel on the clear-coat normal, coat weight 1.0</span></div>
+<div class="card a"><b class="k">2×2 twill carbon</b><br><span class="dim">Two orthogonal wave bands mixed by a checker → weave mask, anisotropic 0.6, bump from weave, glossy coat</span></div>
+<div class="card a"><b class="k">Chevron-tread tyre</b><br><span class="dim">Object-space atan2 angle drives a sine groove only inside the tread mask; sidewall/tread roughness split; micro-noise bump</span></div>
+<div class="card a"><b class="k">Brushed forged alloy</b><br><span class="dim">Stretched noise (600:4) → roughness streaks, anisotropic 0.85</span></div>
+<div class="card a"><b class="k">Drilled carbon-ceramic disc</b><br><span class="dim">Voronoi holes as mask + inverted bump, heat-tinted noise ramp</span></div>
+<div class="card a"><b class="k">Cycles GPU bake (RTX 5080)</b><br><span class="dim">Diffuse colour, roughness and tangent normal baked per part → 15 maps (1–2K) → image-based materials → GLB for the web simulator</span></div>
+</div></section>
+
+<section><h2 class="a"><small>Bake pipeline</small>From node graph to game-ready asset</h2>
+<div class="flow a"><div class="card">Procedural node materials</div><i>→</i><div class="card">Smart / cylinder UV unwrap</div><i>→</i><div class="card">Cycles bake: diffuse · roughness · normal</div><i>→</i><div class="card">Baked principled material</div><i>→</i><div class="card">GLB export (3.7 MB)</div><i>→</i><div class="card">Three.js simulator</div></div>
+<p class="a dim">Shared wheel meshes mean one bake serves all four corners. Procedural materials are kept for offline renders; baked ones are swapped in only for export.</p></section>
+
+<section><h2 class="a"><small>Specification</small>Variant C, Electric Hypercar</h2>
+<div class="grid g4">
+<div class="card stat a"><b>4.62 m</b><span>Length · 2.03 m wide · 1.14 m high</span></div>
+<div class="card stat a"><b>2.78 m</b><span>Wheelbase · 1.71 / 1.66 m track</span></div>
+<div class="card stat a"><b>1297 kg</b><span>Total mass incl. 2 occupants</span></div>
+<div class="card stat a"><b>0.347 m</b><span>CG height · 49 % front</span></div>
+<div class="card stat a"><b>1100 kW</b><span>Quad motor · 1600 N·m, 8.2:1 reduction</span></div>
+<div class="card stat a"><b>110 kWh</b><span>NMC pack · 524 kg</span></div>
+<div class="card stat a"><b>0.29</b><span>Cd · ClA 1.63 m²</span></div>
+<div class="card stat a"><b>105 mm</b><span>Ground clearance · 710 mm wheels</span></div>
+</div></section>
+
+<section><h2 class="a"><small>Parametric model</small>Change one number, everything updates</h2>
+<div class="grid g2"><div class="card a"><pre style="margin:0;font-size:13px;color:#cfe">params.json
+ ├─ Vehicle_Length / Width / Height
+ ├─ Wheelbase, Track_Width_Front/Rear
+ ├─ Wheel_Diameter, Wheel_Width
+ ├─ Chassis_Thickness, Tub_Section_Height
+ ├─ Motor_Power, Motor_Torque, Gear_Ratio
+ ├─ Battery_Capacity, Pack_Specific_Energy
+ ├─ Spring_Rate, Motion_Ratio, Damping_Ratio
+ ├─ Brake_Disc_Diameter, Regen_Fraction
+ └─ Drag_Coefficient, Lift_Coefficient
+        ↓
+ mass · CG · aero · launch · braking ·
+ suspension · FEA · range · cost · sim</pre></div>
+<div class="card a"><b class="k">Propagation test (automated)</b><p class="dim">+20 kWh battery → +95 kg mass → CG, inertia, launch, braking, ride frequency and range all recompute. CI re-runs every simulation on every push.</p>
+<b class="k">Five variants</b><p class="dim">A Urban · B Track · C Electric Hypercar · D Off-Road · E Autonomous 2035, each a set of overrides on one base table.</p></div></div></section>
+
+<section><h2 class="a"><small>Dynamics</small>Launch simulation</h2>
+<div class="grid g2" style="align-items:center"><img class="a" src="img/launch.png" alt="Launch speed vs time for five variants">
+<div class="a"><p class="eq">F<sub>x</sub> = min(T·G·η / r , P·η / v , μ(mg + ½ρv²C<sub>L</sub>A)) − ½ρv²C<sub>D</sub>A − C<sub>rr</sub>mg</p>
+<p class="eq">a = F<sub>x</sub> / (1.04 m)</p>
+<p class="dim">Time-stepped at 2 ms. Torque-limited, then traction-limited (aero load grows grip), then power-limited. 1.04 accounts for rotating inertia.</p>
+<div class="grid g3"><div class="card stat"><b>2.10 s</b><span>0-60 mph</span></div><div class="card stat"><b>3.41 s</b><span>0-100 mph</span></div><div class="card stat"><b>8.07 s</b><span>¼ mile @ 200 mph</span></div></div></div></div></section>
+
+<section><h2 class="a"><small>Aerodynamics &amp; braking</small>Grip you get from air</h2>
+<div class="grid g2"><div class="card a"><p class="eq">D = ½ρv²C<sub>D</sub>A &nbsp;·&nbsp; L = ½ρv²C<sub>L</sub>A</p>
+<p>At 250 km/h: drag <b class="k">1645 N</b>, downforce <b class="k">4821 N</b> (≈ 40 % of weight). Lateral capacity rises from <b class="k">1.43 g</b> at 100 km/h to <b class="k">1.86 g</b> at 250 km/h.</p></div>
+<div class="card a"><p>60-0 mph <b class="k">27.6 m</b> · 100-0 mph <b class="k">72.4 m</b></p>
+<p>Ideal front brake bias at 1.2 g: <b class="k">64 %</b> (1.91 kN load transfer)</p>
+<p>100-0 stop dumps 1.30 MJ; 35 % regen leaves a <b class="k">15 °C</b> disc rise per stop on carbon-ceramic.</p></div></div></section>
+
+<section><h2 class="a"><small>Suspension &amp; steering</small>Pushrod double wishbone</h2>
+<div class="grid g4">
+<div class="card stat a"><b>61.5</b><span>Wheel rate N/mm (160 N/mm spring × MR² 0.62²)</span></div>
+<div class="card stat a"><b>2.33 Hz</b><span>Ride frequency, sport-car band</span></div>
+<div class="card stat a"><b>14.5 Hz</b><span>Wheel-hop, well separated from ride</span></div>
+<div class="card stat a"><b>0.61°/g</b><span>Roll gradient</span></div>
+<div class="card stat a"><b>2.68 kN·s/m</b><span>Damping at ζ = 0.32</span></div>
+<div class="card stat a"><b>110 mm</b><span>Travel (46 mm static sag)</span></div>
+<div class="card stat a"><b>30° / 23.1°</b><span>Ackermann inner / outer</span></div>
+<div class="card stat a"><b>5.67 m</b><span>Turn radius</span></div></div></section>
+
+<section><h2 class="a"><small>Structures</small>Chassis FEA: CFRP monocoque</h2>
+<div class="grid g2" style="align-items:center"><img class="a" src="img/fea_chassis.png" alt="Beam FEA deflection and stress">
+<div class="a"><p>40-element Euler–Bernoulli stiffness-matrix model of the tub box section under a <b class="k">3 g bump</b>.</p>
+<ul><li>Max deflection <b class="k">0.249 mm</b>, matches closed form 5wL⁴/384EI to &lt;1 %</li>
+<li>Max bending stress <b class="k">4.5 MPa</b> vs 600 MPa allowable</li>
+<li>Torsional stiffness (Bredt–Batho) <b class="k">45.9 kN·m/deg</b>, hypercar class</li></ul>
+<p class="dim">The bending FoS is huge on purpose; torsion, crash and bonded joints drive the real tub layup.</p></div></div></section>
+
+<section><h2 class="a"><small>Platform</small>Five variants compared</h2>
+<div class="card a" style="overflow:auto"><table>
+<tr><th>Metric</th><th>A Urban</th><th>B Track</th><th>C Electric</th><th>D Off-Road</th><th>E Auto 2035</th></tr>
+<tr><td>Mass kg</td><td>1294</td><td>1139</td><td>1297</td><td>1520</td><td>1344</td></tr>
+<tr><td>Power kW</td><td>450</td><td>1250</td><td>1100</td><td>620</td><td>800</td></tr>
+<tr><td>0-60 mph s</td><td>2.74</td><td>1.77</td><td>2.10</td><td>3.08</td><td>2.28</td></tr>
+<tr><td>¼ mile s</td><td>9.93</td><td>7.35</td><td>8.07</td><td>10.12</td><td>8.65</td></tr>
+<tr><td>60-0 mph m</td><td>36.3</td><td>22.9</td><td>27.6</td><td>40.0</td><td>30.1</td></tr>
+<tr><td>Lateral g @250</td><td>1.12</td><td>3.20</td><td>1.86</td><td>0.95</td><td>1.57</td></tr>
+<tr><td>Range km @100</td><td>624</td><td>392</td><td>757</td><td>509</td><td>1055</td></tr>
+<tr><td>Ride Hz</td><td>1.80</td><td>3.01</td><td>2.33</td><td>1.42</td><td>2.29</td></tr>
+<tr><td>Est. BOM $</td><td>156k</td><td>244k</td><td>243k</td><td>175k</td><td>282k</td></tr></table></div></section>
+
+<section><h2 class="a"><small>Swappable parts</small>Trade-offs, not free upgrades</h2>
+<div class="grid g3">
+<div class="card a"><b class="k">Wheels</b><br>21" carbon: <span class="pro">−18 kg unsprung, sharper</span> / <span class="con">$22k, kerb-crack risk</span><br>18" rally: <span class="pro">absorbs rough roads</span> / <span class="con">+22 kg, less grip</span></div>
+<div class="card a"><b class="k">Tyres</b><br>Semi-slick: <span class="pro">+15 % grip</span> / <span class="con">wet-unsafe, 8k km life</span><br>Eco low-RR: <span class="pro">+8–10 % range</span> / <span class="con">longer stops</span></div>
+<div class="card a"><b class="k">Aero</b><br>Track pack: <span class="pro">2.5× downforce</span> / <span class="con">more drag, less range</span><br>No wing: <span class="pro">lowest drag</span> / <span class="con">light rear at speed</span></div>
+<div class="card a"><b class="k">Motors</b><br>Quad 1450 kW: <span class="pro">sub-2 s potential</span> / <span class="con">traction-limited, thermal derate</span><br>Dual 600 kW: <span class="pro">−48 kg, cheaper</span> / <span class="con">no per-wheel vectoring</span></div>
+<div class="card a"><b class="k">Battery</b><br>80 kWh LFP: <span class="pro">−90 kg, long life</span> / <span class="con">−25 % range</span><br>130 kWh solid-state: <span class="pro">lighter + more range</span> / <span class="con">not production-ready</span></div>
+<div class="card a"><b class="k">Brakes</b><br>Cast iron: <span class="pro">cheap, cold bite</span> / <span class="con">+20 kg unsprung, fades</span><br>Carbon-ceramic: <span class="pro">fade-free</span> / <span class="con">$15k to replace</span></div>
+</div><p class="a dim">Every swap is live in the simulator garage, with an animated jack-up swap and an instant stat delta.</p></section>
+
+<section><h2 class="a"><small>Mass</small>Where the kilograms go</h2>
+<div class="grid g2" style="align-items:center"><img class="a" src="img/mass_breakdown.png" alt="Mass breakdown pie" style="max-height:62vh">
+<div class="a"><div>Battery pack · 524 kg</div><div class="bar"><i style="--w:100%"></i></div>
+<div>Occupants · 160 kg</div><div class="bar"><i style="--w:31%"></i></div>
+<div>Motors + inverters · 116 kg</div><div class="bar"><i style="--w:22%"></i></div>
+<div>Wheels + tyres · 82 kg</div><div class="bar"><i style="--w:16%"></i></div>
+<p class="dim">The pack is 40 % of the car. Solid-state cells (variant E, 0.32 kWh/kg) are the single biggest lever on weight.</p></div></div></section>
+
+<section><h2 class="a"><small>Reliability &amp; risk</small>What could go wrong</h2>
+<div class="grid g2"><div class="card a"><p>Series-system MTBF <b class="k">10,550 h</b>; R(5000 h) = <b class="k">0.62</b>. The inverter is the top contributor (9 failures per 10⁶ h) → redundant gate drivers + thermal derating.</p></div>
+<div class="card a"><ul><li><span class="con">Thermal:</span> 1.1 MW for &gt;40 s needs active pack + motor cooling</li>
+<li><span class="con">Cost:</span> $243k BOM estimate, CFRP tub + ceramics dominate</li>
+<li><span class="con">Model fidelity:</span> first-order physics; needs CFD, crash FEA &amp; test validation</li></ul></div></div></section>
+
+<section><h2 class="a"><small>Software</small>Repository &amp; CI</h2>
+<div class="grid g2"><div class="card a"><pre style="margin:0;font-size:13px;color:#cfe">hypercar-x/
+├─ params.json          master parameter table
+├─ hypercar/model.py    physics + FEA engine
+├─ hypercar/report.py   variants → tables & plots
+├─ tests/               propagation & bounds tests
+├─ blender/             .blend + 15 baked PBR maps
+├─ docs/index.html      drivable 3D simulator
+├─ docs/presentation.html
+└─ .github/workflows/   CI: test + simulate</pre></div>
+<div class="card a"><b class="k">Drive it</b><p>Three.js bicycle model with saturating tyres, friction circle, aero drag &amp; downforce, ¼-mile timing, tyre smoke, swappable parts, and the Blender GLB. The simulator's 0-60 matches the Python model (≈2.1 s).</p></div></div></section>
+
+<section><h2 class="a"><small>Roadmap</small>Toward 2035</h2>
+<div class="flow a"><div class="card"><b class="k">Now</b><br>Parametric model, sim, Blender asset</div><i>→</i><div class="card"><b class="k">Next</b><br>OpenFOAM CFD, shell FEA of tub, lap-time sim</div><i>→</i><div class="card"><b class="k">Then</b><br>Scale 1:10 RC prototype, telemetry digital twin</div><i>→</i><div class="card"><b class="k">2035</b><br>Solid-state pack, L4 autonomy, OTA chassis tuning</div></div>
+<h1 class="a" style="margin-top:6vh;font-size:clamp(28px,4vw,52px)">Thank you</h1></section>
+</div>
+<nav><button id="prev">◀</button><span id="num"></span><button id="next">▶</button></nav>
+<script>
+const deck=document.getElementById('deck'),S=[...deck.children];let i=0;
+function go(n){i=Math.max(0,Math.min(S.length-1,n));deck.style.transform=`translateX(${-i*100}vw)`;S.forEach((s,k)=>s.classList.toggle('on',k===i));
+document.getElementById('num').textContent=`${i+1} / ${S.length}`;document.getElementById('prog').style.width=`${(i+1)/S.length*100}%`;
+S.forEach((s,k)=>s.querySelectorAll('video').forEach(v=>k===i?v.play().catch(()=>{}):v.pause()));}
+addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown'].includes(e.key))go(i+1);if(['ArrowLeft','PageUp'].includes(e.key))go(i-1)});
+document.getElementById('next').onclick=()=>go(i+1);document.getElementById('prev').onclick=()=>go(i-1);
+let tx=null;addEventListener('touchstart',e=>tx=e.touches[0].clientX);addEventListener('touchend',e=>{if(tx===null)return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50)go(i+(d<0?1:-1));tx=null});
+go(0);
+// animated airflow streamlines background
+const c=document.getElementById('bg'),x=c.getContext('2d');let P=[];
+function rs(){c.width=innerWidth;c.height=innerHeight;P=Array.from({length:90},()=>({x:Math.random()*c.width,y:Math.random()*c.height,s:1+Math.random()*3}))}
+addEventListener('resize',rs);rs();
+(function f(){x.fillStyle='rgba(6,9,13,.18)';x.fillRect(0,0,c.width,c.height);x.strokeStyle='rgba(54,211,196,.35)';
+for(const p of P){const cy=c.height*.6,dy=p.y-cy,bump=Math.exp(-(((p.x-c.width*.5)/(c.width*.18))**2))*40*Math.sign(dy||1)*Math.exp(-Math.abs(dy)/120);
+x.beginPath();x.moveTo(p.x,p.y+bump);p.x+=p.s*2;if(p.x>c.width){p.x=0;p.y=Math.random()*c.height}
+const b2=Math.exp(-(((p.x-c.width*.5)/(c.width*.18))**2))*40*Math.sign(dy||1)*Math.exp(-Math.abs(dy)/120);x.lineTo(p.x,p.y+b2);x.stroke()}requestAnimationFrame(f)})();
+</script></body></html>

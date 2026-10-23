@@ -41,9 +41,9 @@ def mass_breakdown(p: dict) -> dict:
     battery = p["Battery_Capacity"] / p["Pack_Specific_Energy"]  # kWh / (kWh/kg)
     motors = p["Motor_Count"] * p["Motor_Power"] / p["Motor_Count"] / p["Motor_Specific_Power"]
     wheel_r = p["Wheel_Diameter"] / 2
-    wheels = 4 * (8.5 + 22 * wheel_r * p["Wheel_Width"])  # forged rim + tire estimate
+    wheels = 4 * (14.0 + 60 * wheel_r * p["Wheel_Width"])  # forged rim + tyre, ~20 kg per corner
     suspension = 4 * (9.0 + 12 * p["Suspension_Travel"])
-    brakes = 4 * (2.2 + 18 * (p["Brake_Disc_Diameter"] / 2) ** 2)
+    brakes = 4 * (6.0 + 40 * (p["Brake_Disc_Diameter"] / 2) ** 2)  # disc + caliper
     body = 85 * (L * W / (4.8 * 2.04))
     aero = p["Aero_Package_Mass"]
     interior = 38 + 22 * p["Passengers"]

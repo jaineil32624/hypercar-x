@@ -15,6 +15,18 @@
 select,button{background:#101824;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
 .bar{height:6px;background:#162232;border-radius:3px;overflow:hidden;margin:3px 0 6px}.bar i{display:block;height:100%;background:var(--acc)}
 #touch{position:fixed;bottom:16px;right:16px;display:none;gap:8px}#touch button{width:62px;height:62px;font-size:20px}
+#garage{left:12px;bottom:12px;width:340px;max-height:58vh;overflow:auto;transition:transform .45s cubic-bezier(.2,.9,.3,1.2),opacity .3s}
+#garage.hide{transform:translateY(120%);opacity:0}
+#garage h2{margin:0 0 6px;font-size:13px;letter-spacing:.12em;color:var(--acc)}
+.slot{margin:8px 0}.slot>span{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.opts{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.opts button{padding:4px 7px;font-size:12px;transition:all .2s}
+.opts button.on{border-color:var(--acc);color:var(--acc);box-shadow:0 0 10px rgba(54,211,196,.35)}
+.pc{font-size:11.5px;display:grid;grid-template-columns:1fr 1fr;gap:6px;animation:fade .35s}
+.pc div{background:#0d141d;border-radius:6px;padding:5px 7px}.pro b{color:#5ee08a}.con b{color:var(--warn)}
+.delta{font-size:11px;color:var(--dim);margin-top:3px}.delta .up{color:#5ee08a}.delta .dn{color:var(--warn)}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;font-size:22px;font-weight:700;color:var(--acc);letter-spacing:.1em;pointer-events:none;transition:all .35s;text-shadow:0 0 18px rgba(54,211,196,.6)}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 @media (pointer:coarse){#touch{display:grid;grid-template-columns:repeat(3,62px)}}
 @media (max-width:640px){#tele{top:auto;bottom:96px;right:12px}#top{max-width:calc(100% - 24px)}}
 </style>
@@ -23,14 +35,17 @@ select,button{background:#101824;color:var(--txt);border:1px solid var(--line);b
 <canvas id="c"></canvas>
 <div id="top" class="hud"><h1>HYPERCAR-X</h1>
  <div style="color:var(--dim)">Physics driven by the same parameter table as the engineering model.</div>
- <div style="margin:8px 0"><select id="variant"></select> <button id="reset">Reset</button> <button id="launch">Launch test</button></div>
- <div style="color:var(--dim)">W/↑ throttle · S/↓ brake · A D steer · Space handbrake · C camera</div>
+ <div style="margin:8px 0"><select id="variant"></select> <button id="reset">Reset</button> <button id="launch">Launch test</button> <button id="blend">Blender model</button></div>
+ <div style="color:var(--dim)">W/↑ throttle · S/↓ brake · A D steer · Space handbrake · C camera · G garage</div>
 </div>
+<div id="garage" class="hud"><h2>GARAGE · SWAP PARTS</h2><div id="slots"></div></div>
+<div id="toast"></div>
 <div id="tele" class="hud"></div>
 <div id="speed" class="hud"><div class="v" id="sv">0</div><div class="u">km/h · <span id="gear">D</span></div></div>
 <div id="touch"><span></span><button data-k="up">▲</button><span></span><button data-k="left">◀</button><button data-k="down">▼</button><button data-k="right">▶</button></div>
 <script src="variants.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
 <script>
 const V = window.VARIANTS, g = 9.81, RHO = 1.225;
 const sel = document.getElementById('variant');
@@ -79,22 +94,27 @@ function buildCar() {
   const canopy = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), glass);
   canopy.scale.set(W * .32, bh * .32, L * .2); canopy.position.set(0, gc + bh * .7, -L * .02); car.add(canopy);
   const diff = new THREE.Mesh(new THREE.BoxGeometry(W * .8, .08, .5), carbon); diff.position.set(0, gc + .05, L / 2 - .2); car.add(diff);
-  if (P.Lift_Coefficient > .5) { // rear wing scaled with downforce coefficient
-    const wing = new THREE.Mesh(new THREE.BoxGeometry(W * .9, .03, .25 + P.Lift_Coefficient * .12), carbon);
-    wing.position.set(0, H + .05 + P.Lift_Coefficient * .08, L / 2 - .25); wing.rotation.x = -.12; car.add(wing);
-    for (const sx of [-1, 1]) { const st = new THREE.Mesh(new THREE.BoxGeometry(.04, .3 + P.Lift_Coefficient * .08, .1), carbon);
-      st.position.set(sx * W * .3, H - .1, L / 2 - .25); car.add(st); } }
+  { // rear wing (always built; garage toggles visibility). 'big' = track-pack upper element
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(W * .9, .03, .32), carbon.clone());
+    wing.position.set(0, H + .12, L / 2 - .25); wing.rotation.x = -.12; wing.userData.wing = 1; car.add(wing); car.userData.wingMesh = wing;
+    const big = new THREE.Mesh(new THREE.BoxGeometry(W * .9, .025, .22), carbon.clone());
+    big.position.set(0, H + .28, L / 2 - .32); big.rotation.x = -.3; big.userData.wing = 'big'; car.add(big);
+    for (const sx of [-1, 1]) { const st2 = new THREE.Mesh(new THREE.BoxGeometry(.04, .42, .1), carbon.clone());
+      st2.position.set(sx * W * .3, H - .06, L / 2 - .25); st2.userData.wing = 1; car.add(st2);
+      const ep = new THREE.Mesh(new THREE.BoxGeometry(.02, .32, .5), carbon.clone()); ep.position.set(sx * W * .45, H + .17, L / 2 - .28); ep.userData.wing = 1; car.add(ep); } }
   const lightM = new THREE.MeshBasicMaterial({color: 0xbff8ff}), tailM = new THREE.MeshBasicMaterial({color: 0xff2a4a});
   const hl = new THREE.Mesh(new THREE.BoxGeometry(W * .7, .04, .04), lightM); hl.position.set(0, gc + bh * .33, -L / 2 - .02); car.add(hl);
-  const tl = new THREE.Mesh(new THREE.BoxGeometry(W * .85, .05, .04), tailM); tl.position.set(0, gc + bh * .5, L / 2 + .02); car.add(tl);
+  const tl = new THREE.Mesh(new THREE.BoxGeometry(W * .85, .05, .04), tailM); tl.position.set(0, gc + bh * .5, L / 2 + .02); tl.material = tailM.clone(); tl.userData.tail = 1; car.add(tl);
   const tireM = new THREE.MeshStandardMaterial({color: 0x15171a, roughness: .9}), rimM = new THREE.MeshStandardMaterial({color: 0xb8c2cc, metalness: .9, roughness: .25});
   const T = P.Track_Width_Front;
   for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
     const pivot = new THREE.Group(); pivot.position.set(x * T / 2, r, z * P.Wheelbase / 2);
     const w = new THREE.Group();
-    const tire = new THREE.Mesh(new THREE.CylinderGeometry(r, r, P.Wheel_Width, 28), tireM); tire.rotation.z = Math.PI / 2; tire.castShadow = true;
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * .68, r * .68, P.Wheel_Width + .01, 10), rimM); rim.rotation.z = Math.PI / 2;
-    w.add(tire, rim); pivot.add(w); car.add(pivot); wheels.push({pivot, w, front: z < 0});
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(r, r, P.Wheel_Width, 28), tireM.clone()); tire.userData.tire = 1; tire.rotation.z = Math.PI / 2; tire.castShadow = true;
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * .68, r * .68, P.Wheel_Width + .01, 10), rimM.clone()); rim.userData.rim = 1; rim.rotation.z = Math.PI / 2;
+    const cal = new THREE.Mesh(new THREE.BoxGeometry(.06, .16, .2), new THREE.MeshStandardMaterial({color: 0xc0201a, roughness: .3}));
+    cal.position.set(-x * (P.Wheel_Width / 2 - .02), r * .45, 0); cal.userData.cal = 1;
+    w.add(tire, rim); pivot.add(w, cal); car.add(pivot); wheels.push({pivot, w, front: z < 0});
   }
   scene.add(car); reset();
 }
@@ -160,11 +180,12 @@ function loop(now) {
   while (acc > 1 / 240) { f = step(1 / 240); acc -= 1 / 240; }
   car.position.set(st.x, 0, st.z); car.rotation.y = st.yaw;
   car.rotation.z = Math.max(-.05, Math.min(.05, -st.ay / g * .025)); car.rotation.x = Math.max(-.04, Math.min(.04, st.ax / g * .02));
+  if (car.userData.wingMesh) car.userData.wingMesh.rotation.x += (((keys['s']||keys['arrowdown']) && st.v > 15 ? -.75 : st.v > 45 && Math.abs(st.steer) < .02 ? -.02 : -.18) - car.userData.wingMesh.rotation.x) * .1;
   for (const w of wheels) { w.w.rotation.x -= st.v * dt / (P.Wheel_Diameter / 2); if (w.front) w.pivot.rotation.y = st.steer; }
   const back = new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw));
   const target = camMode === 0 ? new THREE.Vector3(st.x, 2.2, st.z).addScaledVector(back, 7.5)
     : camMode === 1 ? new THREE.Vector3(st.x, 1.1, st.z).addScaledVector(back, -.2) : new THREE.Vector3(st.x + 14, 6, st.z + 14);
-  camPos.lerp(target, camMode === 1 ? 1 : .08); cam.position.copy(camPos);
+  camPos.lerp(target, camMode === 1 ? 1 : .25); cam.position.copy(camPos);
   cam.lookAt(camMode === 1 ? new THREE.Vector3(st.x, 1, st.z).addScaledVector(back, -10) : new THREE.Vector3(st.x, .8, st.z));
   sun.position.set(st.x + 60, 120, st.z + 40); sun.target.position.set(st.x, 0, st.z);
   document.getElementById('sv').textContent = Math.abs(st.v * 3.6).toFixed(0);
@@ -177,6 +198,133 @@ function loop(now) {
    <div class="row"><span>Distance</span><b>${st.dist.toFixed(0)} m</b></div>${mk}`;
   renderer.render(scene, cam); requestAnimationFrame(loop);
 }
+// ---------- GARAGE: swappable parts, each modifies physics params, with pros/cons
+const PARTS = {
+  Wheels: [
+    {n:'20" Forged Al', d:{}, pro:'Balanced unsprung mass, good ride', con:'Not the lightest option', col:0xb8c2cc},
+    {n:'21" Carbon', d:{Wheel_Diameter:+0.02, mass:-18}, pro:'−18 kg unsprung, sharper response', con:'$22k/set, cracks on hard kerb hits', col:0x222428},
+    {n:'18" Rally', d:{Wheel_Diameter:+0.06, Wheel_Width:-0.04, mass:+22, Tire_Mu:-0.2, Ground_Clearance:+0.06}, pro:'Tall sidewall soaks up rough roads', con:'+22 kg, slower steering, less grip', col:0x8a6a3a}],
+  Tyres: [
+    {n:'Performance', d:{}, pro:'All-weather, 40k km life', con:'Grip falls off on track', tire:0x15171a},
+    {n:'Semi-slick', d:{Tire_Mu:+0.2, Rolling_Resistance:+0.002}, pro:'+15% grip, quicker laps', con:'Useless in rain, 8k km life', tire:0x0b0b0c},
+    {n:'Eco low-RR', d:{Tire_Mu:-0.2, Rolling_Resistance:-0.004}, pro:'+8–10% range', con:'Longer braking, less cornering grip', tire:0x22252a}],
+  Aero: [
+    {n:'Active wing', d:{}, pro:'Downforce when cornering, DRS on straights', con:'Actuators add complexity', wing:1},
+    {n:'Track pack', d:{Lift_Coefficient:+1.2, Drag_Coefficient:+0.13, mass:+18}, pro:'2.5× downforce, 3 g+ corners', con:'More drag → lower top speed & range', wing:2},
+    {n:'Slick / no wing', d:{Lift_Coefficient:-0.7, Drag_Coefficient:-0.05, mass:-28}, pro:'Lowest drag, best range', con:'Rear goes light at speed', wing:0}],
+  Motors: [
+    {n:'Quad 1100 kW', d:{}, pro:'Torque vectoring on every wheel', con:'Heavy, costly, heat at full power'},
+    {n:'Quad 1450 kW', d:{Motor_Power:+350, Motor_Torque:+300, mass:+35}, pro:'Sub-2 s 0-60 potential', con:'Traction-limited early, thermal derate after ~40 s'},
+    {n:'Dual 600 kW', d:{Motor_Power:-500, Motor_Torque:-600, mass:-48}, pro:'−48 kg, cheaper, simpler', con:'Half the power, no per-wheel vectoring'}],
+  Battery: [
+    {n:'110 kWh NMC', d:{}, pro:'~750 km range', con:'~525 kg pack'},
+    {n:'80 kWh LFP', d:{mass:-90}, pro:'−90 kg, long cycle life', con:'Range drops ~25%'},
+    {n:'130 kWh Solid-state', d:{mass:-120}, pro:'More energy & lighter (2035 tech)', con:'Not production-ready, very expensive'}],
+  Brakes: [
+    {n:'Carbon-ceramic', d:{}, pro:'Fade-free, −20 kg vs iron', con:'$15k replacement, weak when cold'},
+    {n:'Cast iron', d:{mass:+20}, pro:'Cheap, strong cold bite', con:'+20 kg unsprung, fades on track'}],
+};
+const sel2 = {}; for (const k in PARTS) sel2[k] = 0;
+const slots = document.getElementById('slots');
+const toast = document.getElementById('toast');
+function applyParts() {
+  const base = V[sel.value];
+  const p = {...base.p}; let m = base.mass;
+  for (const k in PARTS) { const d = PARTS[k][sel2[k]].d;
+    for (const key in d) { if (key === 'mass') m += d[key]; else p[key] = (p[key] || 0) + d[key]; } }
+  p.Lift_Coefficient = Math.max(0, p.Lift_Coefficient);
+  return {p, m};
+}
+function quickStats(p, m) { // same physics as Python model (closed-form approximations)
+  const r = p.Wheel_Diameter / 2, q250 = .5 * RHO * (250/3.6) ** 2;
+  const trac = p.Tire_Mu * g, pw = p.Motor_Power * 1000 * p.Driveline_Eff / m;
+  const v60 = 26.82, t60 = v60 / trac + Math.max(0, (v60 * v60 / 2) / pw - v60 * v60 / (2 * trac)) * 0.6;
+  let lo = 1, hi = 200; for (let i = 0; i < 60; i++) { const v = (lo + hi) / 2;
+    (p.Motor_Power*1000*p.Driveline_Eff > (.5*RHO*v*v*p.Drag_Coefficient*p.Frontal_Area + p.Rolling_Resistance*m*g)*v) ? lo = v : hi = v; }
+  const vmax = Math.min(lo, p.Motor_Max_RPM*2*Math.PI/60/p.Gear_Ratio*r);
+  return {'Mass kg': m, '0-60 s': t60, 'Top km/h': vmax*3.6, 'Lat g @250': p.Tire_Mu*(m*g + q250*p.Lift_Coefficient*p.Frontal_Area)/(m*g)};
+}
+function renderGarage() {
+  const {p, m} = applyParts(), now = quickStats(p, m), base = quickStats(V[sel.value].p, V[sel.value].mass);
+  slots.innerHTML = Object.entries(PARTS).map(([k, opts]) => {
+    const o = opts[sel2[k]];
+    return `<div class="slot"><span>${k}</span><div class="opts">${opts.map((x, i) =>
+      `<button data-s="${k}" data-i="${i}" class="${i === sel2[k] ? 'on' : ''}">${x.n}</button>`).join('')}</div>
+      <div class="pc"><div class="pro"><b>+ </b>${o.pro}</div><div class="con"><b>− </b>${o.con}</div></div></div>`; }).join('') +
+    `<div class="delta">${Object.keys(now).map(k => { const dv = now[k] - base[k]; const better = (k==='Mass kg'||k==='0-60 s') ? dv < 0 : dv > 0;
+      return `${k}: <b>${now[k].toFixed(k==='Lat g @250'||k==='0-60 s'?2:0)}</b> <span class="${Math.abs(dv)<1e-6?'':better?'up':'dn'}">${Math.abs(dv)<1e-6?'':(dv>0?'+':'')+dv.toFixed(k==='Lat g @250'||k==='0-60 s'?2:0)}</span>`; }).join(' · ')}</div>`;
+  slots.querySelectorAll('button').forEach(b => b.onclick = () => { sel2[b.dataset.s] = +b.dataset.i; swapPart(b.dataset.s); });
+}
+let swapAnim = null;
+function swapPart(slot) {
+  const {p, m} = applyParts(); P = p; M = m;
+  toast.textContent = `${slot.toUpperCase()} → ${PARTS[slot][sel2[slot]].n}`; toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 900);
+  // animate: car lifts on jack, part drops out and new part drops in, then rebuild
+  swapAnim = {t: 0, slot};
+  renderGarage();
+}
+function tickSwap(dt) {
+  if (!swapAnim) return; swapAnim.t += dt; const t = swapAnim.t;
+  const lift = t < .35 ? t / .35 : t < .9 ? 1 : Math.max(0, 1 - (t - .9) / .35);
+  car.position.y = .35 * Math.sin(lift * Math.PI / 2);
+  for (const w of wheels) if (swapAnim.slot === 'Wheels' || swapAnim.slot === 'Tyres' || swapAnim.slot === 'Brakes') {
+    w.w.position.x = (t > .35 && t < .9) ? Math.sin((t - .35) / .55 * Math.PI) * 0.6 * Math.sign(w.pivot.position.x) : 0; }
+  if (!swapAnim.rebuilt && t > .62) { swapAnim.rebuilt = true; const keep = {...st}; rebuildFromParts(); Object.assign(st, keep); burst(); }
+  if (t > 1.3) { car.position.y = 0; swapAnim = null; }
+}
+function rebuildFromParts() {
+  const saveP = P, saveM = M; buildCarGeom(); P = saveP; M = saveM;
+  const w = PARTS.Wheels[sel2.Wheels], ty = PARTS.Tyres[sel2.Tyres], aeroP = PARTS.Aero[sel2.Aero];
+  car.traverse(o => { if (o.userData.rim) o.material.color.setHex(w.col); if (o.userData.tire) o.material.color.setHex(ty.tire);
+    if (o.userData.wing) o.visible = aeroP.wing > 0; if (o.userData.wing === 'big') o.visible = aeroP.wing === 2;
+    if (o.userData.cal) o.material.color.setHex(sel2.Brakes ? 0x666b72 : 0xc0201a); });
+}
+// particles: sparks on swap + tyre smoke under wheelspin/handbrake
+const sparks = [];
+const sparkGeo = new THREE.SphereGeometry(.03, 4, 4);
+function burst() { for (let i = 0; i < 40; i++) { const s = new THREE.Mesh(sparkGeo, new THREE.MeshBasicMaterial({color: i % 2 ? 0x36d3c4 : 0xffd27a, transparent: true}));
+  s.position.set(st.x + (Math.random() - .5) * 2, .4, st.z + (Math.random() - .5) * 4);
+  s.userData.v = new THREE.Vector3((Math.random() - .5) * 6, Math.random() * 6, (Math.random() - .5) * 6); s.userData.life = 1; scene.add(s); sparks.push(s); } }
+const smokeM = new THREE.MeshBasicMaterial({color: 0xcfd6de, transparent: true, opacity: .35, depthWrite: false});
+function smoke() { const s = new THREE.Mesh(new THREE.SphereGeometry(.25, 8, 6), smokeM.clone());
+  const back = new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw));
+  s.position.set(st.x, .3, st.z).addScaledVector(back, P.Wheelbase / 2 + .2); s.position.x += (Math.random() - .5) * P.Track_Width_Rear;
+  s.userData.v = new THREE.Vector3((Math.random() - .5), .8 + Math.random(), (Math.random() - .5)); s.userData.life = 1.6; s.userData.smoke = 1; scene.add(s); sparks.push(s); }
+function tickFx(dt) {
+  if ((Math.abs(st.ay) > P.Tire_Mu * g * .9 || keys[' '] || (st.ax > P.Tire_Mu * g * .85 && st.v < 25)) && st.v > 2 && Math.random() < .6) smoke();
+  for (let i = sparks.length - 1; i >= 0; i--) { const s = sparks[i]; s.userData.life -= dt;
+    s.position.addScaledVector(s.userData.v, dt); if (!s.userData.smoke) s.userData.v.y -= 12 * dt; else s.scale.multiplyScalar(1 + dt * 1.8);
+    s.material.opacity = Math.max(0, s.userData.life) * (s.userData.smoke ? .25 : 1);
+    if (s.userData.life <= 0) { scene.remove(s); s.geometry !== sparkGeo && s.geometry.dispose(); sparks.splice(i, 1); } } }
+// brake-light glow + headlight cones + speed-lines FOV
+const _render = renderer.render.bind(renderer);
+renderer.render = (s, c) => { const dt = 1 / 60; tickSwap(dt); tickFx(dt);
+  car.traverse(o => { if (o.userData.tail) o.material.color.setHex(keys['s'] || keys['arrowdown'] ? 0xff4060 : 0x801020); });
+  cam.fov += ((60 + Math.min(25, st.v * .25)) - cam.fov) * .05; cam.updateProjectionMatrix(); _render(s, c); };
+addEventListener('keydown', e => { if (e.key.toLowerCase() === 'g') document.getElementById('garage').classList.toggle('hide'); });
+
+// ---------- tag meshes for swapping (wrap buildCar)
+const buildCarGeom = buildCar;
+buildCar = function () { buildCarGeom(); for (const k in PARTS) sel2[k] = sel2[k] || 0; const r = applyParts(); P = r.p; M = r.m; rebuildFromParts(); renderGarage(); };
+sel.onchange = () => buildCar();
+// ---------- Blender model (baked PBR textures) toggle
+let glb = null, useGlb = false, glbSpins = [];
+document.getElementById('blend').onclick = () => {
+  useGlb = !useGlb; document.getElementById('blend').classList.toggle('on', useGlb);
+  if (useGlb && !glb) {
+    new THREE.GLTFLoader().load('hypercar_x.glb', g => {
+      glb = new THREE.Group(); const root = g.scene; root.rotation.y = Math.PI / 2; glb.add(root);
+      root.traverse(o => { if (o.isMesh) { o.castShadow = true; } if (o.name === 'HX_Root') { o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); }
+        if (o.name.startsWith('HX_Spin_')) glbSpins.push(o); });
+      scene.add(glb); applyGlb();
+    }, undefined, e => { useGlb = false; toast.textContent = 'GLB needs http(s) — use GitHub Pages'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1800); });
+  } else applyGlb();
+};
+function applyGlb() { if (glb) glb.visible = useGlb; car.children.forEach(c => c.visible = !useGlb || c.userData.keep); if (!useGlb) rebuildFromParts(); }
+const _loop2 = loop;
+loop = function (now) { if (glb && useGlb) { glb.position.copy(car.position); glb.rotation.copy(car.rotation);
+  for (const s2 of glbSpins) s2.rotation.z -= st.v / 60 / (P.Wheel_Diameter / 2); } _loop2(now); };
 buildCar(); requestAnimationFrame(loop);
 </script>
 </body>
