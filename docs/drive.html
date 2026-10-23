@@ -55,7 +55,20 @@ sel.value = 'C';
 // ---------- scene
 const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('c'), antialias: true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0e14); scene.fog = new THREE.Fog(0x0a0e14, 120, 600);
+// studio-style environment map so metallic paint, carbon and alloy get real reflections
+(function makeEnv() {
+  const es = new THREE.Scene();
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.ShaderMaterial({side: THREE.BackSide,
+    vertexShader: 'varying vec3 p; void main(){ p = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+    fragmentShader: 'varying vec3 p; void main(){ float h = normalize(p).y; vec3 c = mix(vec3(0.05,0.06,0.08), vec3(0.55,0.65,0.8), smoothstep(-0.1,0.6,h)); c += vec3(1.0,0.9,0.75)*smoothstep(0.0,0.02,h)*smoothstep(0.08,0.0,h)*0.8; gl_FragColor = vec4(c,1.); }'}));
+  es.add(sky);
+  for (const [x, y, z, w, h, k] of [[0, 30, 0, 40, 12, 3], [-40, 10, 0, 2, 30, 2], [40, 10, 0, 2, 30, 1.5]]) {
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({color: new THREE.Color(k, k, k), side: THREE.DoubleSide}));
+    pl.position.set(x, y, z); pl.lookAt(0, 0, 0); es.add(pl); }
+  const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(es, 0.02).texture;
+})();
 const cam = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
 scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x1a1208, 0.7));
 const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(60, 120, 40); sun.castShadow = true;
@@ -313,7 +326,7 @@ let glb = null, useGlb = false, glbSpins = [];
 document.getElementById('blend').onclick = () => {
   useGlb = !useGlb; document.getElementById('blend').classList.toggle('on', useGlb);
   if (useGlb && !glb) {
-    new THREE.GLTFLoader().load('hypercar_x.glb?v=3', g => {
+    new THREE.GLTFLoader().load('hypercar_x.glb?v=4', g => {
       glb = new THREE.Group(); const root = g.scene; root.rotation.y = Math.PI / 2; glb.add(root);
       root.traverse(o => { if (o.isMesh) { o.castShadow = true; } if (o.name === 'HX_Root') { o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); }
         if (o.name.startsWith('HX_Spin_')) glbSpins.push(o); });
