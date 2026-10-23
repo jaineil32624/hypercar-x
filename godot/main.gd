@@ -67,24 +67,29 @@ func _build_world() -> void:
 	var e := Environment.new()
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	sm.sky_top_color = Color(0.12, 0.2, 0.32)
-	sm.sky_horizon_color = Color(0.75, 0.6, 0.45)
-	sm.ground_horizon_color = Color(0.3, 0.28, 0.25)
+	sm.sky_top_color = Color(0.04, 0.08, 0.16)
+	sm.sky_horizon_color = Color(0.32, 0.36, 0.42)
+	sm.ground_horizon_color = Color(0.2, 0.21, 0.23)
+	sm.ground_bottom_color = Color(0.05, 0.05, 0.06)
+	sm.sky_energy_multiplier = 0.8
 	sky.sky_material = sm
 	e.background_mode = Environment.BG_SKY
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	e.tonemap_mode = Environment.TONE_MAPPER_ACES
+	e.tonemap_exposure = 0.9
+	e.ambient_light_energy = 0.6
 	e.glow_enabled = true
 	e.fog_enabled = true
 	e.fog_density = 0.0015
-	e.fog_light_color = Color(0.6, 0.55, 0.5)
+	e.fog_light_color = Color(0.25, 0.3, 0.38)
 	env.environment = e
 	add_child(env)
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-35, -40, 0)
-	sun.light_energy = 1.3
+	sun.light_energy = 1.6
+	sun.light_color = Color(1.0, 0.93, 0.82)
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 120.0
 	add_child(sun)
@@ -491,7 +496,7 @@ func _process(dt: float) -> void:
 			target = car.global_position + car.global_basis.z * 0.2 + Vector3.UP * 1.05
 		_:
 			target = car.global_position + Vector3(9, 4, 9)
-	var k := 1.0 if cam_mode == 1 else 1.0 - exp(-dt * 6.0)
+	var k := 1.0 if cam_mode == 1 else 1.0 - exp(-dt * 18.0)
 	cam.global_position = cam.global_position.lerp(target, k)
 	var look := car.global_position + car.global_basis.z * (12.0 if cam_mode == 1 else 0.0) + Vector3.UP * 0.8
 	cam.look_at(look, Vector3.UP)
