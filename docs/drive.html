@@ -313,7 +313,7 @@ let glb = null, useGlb = false, glbSpins = [];
 document.getElementById('blend').onclick = () => {
   useGlb = !useGlb; document.getElementById('blend').classList.toggle('on', useGlb);
   if (useGlb && !glb) {
-    new THREE.GLTFLoader().load('hypercar_x.glb', g => {
+    new THREE.GLTFLoader().load('hypercar_x.glb?v=3', g => {
       glb = new THREE.Group(); const root = g.scene; root.rotation.y = Math.PI / 2; glb.add(root);
       root.traverse(o => { if (o.isMesh) { o.castShadow = true; } if (o.name === 'HX_Root') { o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); }
         if (o.name.startsWith('HX_Spin_')) glbSpins.push(o); });
