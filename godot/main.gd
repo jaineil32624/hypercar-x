@@ -302,7 +302,7 @@ func _apply_params() -> void:
 	}
 	car.mass = P["mass"]
 	for w in wheels:
-		w.wheel_friction_slip = 0.6 * P["mu"]  # tuned so Godot 0-60 matches the Python model
+		w.wheel_friction_slip = P["mu"]
 		w.suspension_max_force = P["mass"] * G * 1.6
 	if wing:
 		wing.visible = part_idx["Aero"] != 2
@@ -418,13 +418,16 @@ func _physics_process(dt: float) -> void:
 	# tractive force = min(torque-limited, power-limited), same as the Python model
 	var f_torque: float = P["torque"] * P["gear"] * 0.92 / P["r"]
 	var f_power: float = P["power"] * 0.92 / maxf(absf(v), 1.0)
-	var f := minf(f_torque, f_power) / 4.0  # Godot applies engine_force at each of the 4 traction wheels
+	# traction limit μ(mg + downforce), as in the Python model (Godot does not cap longitudinal grip itself)
+	var q0 := 0.5 * RHO * v * v
+	var f_grip: float = P["mu"] * (P["mass"] * G + q0 * P["cl"] * P["area"])
+	var f := minf(minf(f_torque, f_power), f_grip) / 4.0  # Godot applies engine_force at each of the 4 traction wheels
 	var v_motor_max: float = P["rpm"] * TAU / 60.0 / P["gear"] * P["r"]
 	if v >= v_motor_max:
 		f = 0.0
 	if brk > 0.0 and v > 1.0:
 		car.engine_force = 0.0
-		car.brake = 0.025 * P["mass"] * P["mu"]
+		car.brake = 0.04 * P["mass"] * P["mu"]
 	elif brk > 0.0:
 		car.engine_force = -f * 0.25  # reverse
 		car.brake = 0.0
