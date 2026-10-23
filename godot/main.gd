@@ -302,8 +302,8 @@ func _apply_params() -> void:
 	}
 	car.mass = P["mass"]
 	for w in wheels:
-		w.wheel_friction_slip = P["mu"]
-		w.suspension_max_force = P["mass"] * 3.5
+		w.wheel_friction_slip = 0.8 * P["mu"]  # tuned so Godot 0-60 matches the Python model
+		w.suspension_max_force = P["mass"] * G * 1.6
 	if wing:
 		wing.visible = part_idx["Aero"] != 2
 	_update_part_label()
