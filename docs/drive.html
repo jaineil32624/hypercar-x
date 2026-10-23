@@ -57,24 +57,22 @@ const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('c'), 
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = true;
 renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0e14); scene.fog = new THREE.Fog(0x0a0e14, 120, 600);
-// studio-style environment map so metallic paint, carbon and alloy get real reflections
+// environment map (painted equirect: sky, horizon glow, softbox strips) for paint/carbon/alloy reflections
 (function makeEnv() {
-  const es = new THREE.Scene();
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.ShaderMaterial({side: THREE.BackSide,
-    vertexShader: 'varying vec3 p; void main(){ p = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-    fragmentShader: 'varying vec3 p; void main(){ float h = normalize(p).y; vec3 c = mix(vec3(0.05,0.06,0.08), vec3(0.55,0.65,0.8), smoothstep(-0.1,0.6,h)); c += vec3(1.0,0.9,0.75)*smoothstep(0.0,0.02,h)*smoothstep(0.08,0.0,h)*0.8; gl_FragColor = vec4(c,1.); }'}));
-  es.add(sky);
-  for (const [x, y, z, w, h, k] of [[0, 30, 0, 40, 12, 3], [-40, 10, 0, 2, 30, 2], [40, 10, 0, 2, 30, 1.5]]) {
-    const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({color: new THREE.Color(k, k, k), side: THREE.DoubleSide}));
-    pl.position.set(x, y, z); pl.lookAt(0, 0, 0); es.add(pl); }
-  const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(es, 0.02).texture;
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 512; const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, '#8fb0d8'); g.addColorStop(0.48, '#d9d2c4'); g.addColorStop(0.52, '#3a3f46'); g.addColorStop(1, '#0c0e11');
+  x.fillStyle = g; x.fillRect(0, 0, 1024, 512);
+  x.fillStyle = '#ffffff'; x.fillRect(380, 40, 260, 60); x.fillRect(80, 150, 30, 180); x.fillRect(900, 150, 30, 180);
+  const tex = new THREE.CanvasTexture(c); tex.mapping = THREE.EquirectangularReflectionMapping; tex.encoding = THREE.sRGBEncoding;
+  scene.environment = new THREE.PMREMGenerator(renderer).fromEquirectangular(tex).texture;
 })();
 const cam = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
 scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x1a1208, 0.7));
 const sun = new THREE.DirectionalLight(0xffffff, 0.9); sun.position.set(60, 120, 40); sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, {left: -60, right: 60, top: 60, bottom: -60});
 scene.add(sun, sun.target);
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshStandardMaterial({color: 0x10151c, roughness: 1}));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshStandardMaterial({color: 0x10151c, roughness: 1, envMapIntensity: 0.25}));
 ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
 scene.add(new THREE.GridHelper(4000, 400, 0x1d2a38, 0x141c26));
 // test track: oval of cones + a long straight with 402 m marker
@@ -82,7 +80,7 @@ const coneM = new THREE.MeshStandardMaterial({color: 0xff8a3d});
 for (let i = 0; i < 80; i++) { const a = i / 80 * Math.PI * 2;
   for (const r of [90, 108]) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.8, 8), coneM);
     c.position.set(Math.cos(a) * r * 1.8, 0.4, Math.sin(a) * r + 200); scene.add(c); } }
-const strip = new THREE.Mesh(new THREE.PlaneGeometry(14, 800), new THREE.MeshStandardMaterial({color: 0x1a222c}));
+const strip = new THREE.Mesh(new THREE.PlaneGeometry(14, 800), new THREE.MeshStandardMaterial({color: 0x1a222c, envMapIntensity: 0.3}));
 strip.rotation.x = -Math.PI / 2; strip.position.set(0, 0.01, -400); scene.add(strip);
 const qm = new THREE.Mesh(new THREE.BoxGeometry(14, 0.05, 1), new THREE.MeshBasicMaterial({color: 0x36d3c4}));
 qm.position.set(0, 0.03, -402.3); scene.add(qm);
@@ -326,7 +324,7 @@ let glb = null, useGlb = false, glbSpins = [];
 document.getElementById('blend').onclick = () => {
   useGlb = !useGlb; document.getElementById('blend').classList.toggle('on', useGlb);
   if (useGlb && !glb) {
-    new THREE.GLTFLoader().load('hypercar_x.glb?v=4', g => {
+    new THREE.GLTFLoader().load('hypercar_x.glb?v=5', g => {
       glb = new THREE.Group(); const root = g.scene; root.rotation.y = Math.PI / 2; glb.add(root);
       root.traverse(o => { if (o.isMesh) { o.castShadow = true; } if (o.name === 'HX_Root') { o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); }
         if (o.name.startsWith('HX_Spin_')) glbSpins.push(o); });
