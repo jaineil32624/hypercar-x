@@ -18,10 +18,13 @@
 A concept-level vehicle engineering package where **one master parameter table (`params.json`) drives everything**: mass and CG, aerodynamics, launch and braking simulation, suspension, steering, chassis FEA, range, reliability and cost. On top of that sit a **rigged, textured Blender model**, a **drivable browser simulator** and a **Godot 4 app for Android and Windows**.
 
 ## Godot app (`godot/`)
+![Godot app](docs/gallery/app_godot_1.jpg)
+
 Godot 4.3 project using the Blender-baked GLB with `VehicleBody3D` physics. Mass, power, torque, grip, drag and downforce come from the engineering model (`godot/variants.json`).
 - Touch pads (GAS, BRAKE, steer) plus keyboard (WASD or arrows)
 - Garage: cycle variants, tyres, aero and motors, with pros and cons on screen
 - Drag strip with a ¼-mile gate, slalom, handling ring and jump ramp; tyre smoke; active wing
+- Calibrated against the Python model. In-app: 0-60 in 2.47 s, ¼ mile in 8.35 s, top speed 343 km/h. Model: 2.10 s, 8.07 s, 343 km/h.
 - `.github/workflows/build-apps.yml` exports the **APK** and a **Windows .exe** and publishes them as a GitHub Release
 
 ## Blender model, animation & texture baking (`blender/`)
