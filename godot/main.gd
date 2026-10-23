@@ -226,7 +226,7 @@ func _build_car() -> void:
 		w.wheel_radius = 0.355
 		w.wheel_rest_length = 0.18
 		w.suspension_travel = 0.12
-		w.suspension_stiffness = 55.0
+		w.suspension_stiffness = 85.0
 		w.damping_compression = 2.2
 		w.damping_relaxation = 3.0
 		w.suspension_max_force = 14000.0
@@ -296,10 +296,11 @@ func _apply_params() -> void:
 		"cd": float(b["cd"]) + ae["cd"],
 		"cl": maxf(0.0, float(b["cl"]) + ae["cl"]),
 		"area": float(b["area"]),
+		"rpm": 21000.0,
 	}
 	car.mass = P["mass"]
 	for w in wheels:
-		w.wheel_friction_slip = 2.2 * P["mu"]
+		w.wheel_friction_slip = P["mu"]
 		w.suspension_max_force = P["mass"] * 3.5
 	if wing:
 		wing.visible = part_idx["Aero"] != 2
@@ -415,7 +416,10 @@ func _physics_process(dt: float) -> void:
 	# tractive force = min(torque-limited, power-limited), same as the Python model
 	var f_torque: float = P["torque"] * P["gear"] * 0.92 / P["r"]
 	var f_power: float = P["power"] * 0.92 / maxf(absf(v), 1.0)
-	var f := minf(f_torque, f_power)
+	var f := minf(f_torque, f_power) / 4.0  # Godot applies engine_force at each of the 4 traction wheels
+	var v_motor_max: float = P["rpm"] * TAU / 60.0 / P["gear"] * P["r"]
+	if v >= v_motor_max:
+		f = 0.0
 	if brk > 0.0 and v > 1.0:
 		car.engine_force = 0.0
 		car.brake = 0.025 * P["mass"] * P["mu"]
