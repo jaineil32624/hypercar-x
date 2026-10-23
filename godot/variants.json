@@ -1,0 +1,72 @@
+{
+ "A": {
+  "name": "Urban Performance",
+  "mass": 1294.3892881478696,
+  "power_kw": 450,
+  "torque": 900,
+  "mu": 1.05,
+  "cd": 0.26,
+  "cl": 0.15,
+  "area": 1.92,
+  "gear": 8.2,
+  "wheel_d": 0.68,
+  "clearance": 0.13,
+  "travel": 0.14
+ },
+ "B": {
+  "name": "Track Hypercar",
+  "mass": 1139.1771630350877,
+  "power_kw": 1250,
+  "torque": 1750,
+  "mu": 1.55,
+  "cd": 0.42,
+  "cl": 2.1,
+  "area": 1.92,
+  "gear": 8.2,
+  "wheel_d": 0.71,
+  "clearance": 0.085,
+  "travel": 0.08
+ },
+ "C": {
+  "name": "Electric Hypercar",
+  "mass": 1297.3038798270677,
+  "power_kw": 1100,
+  "torque": 1600,
+  "mu": 1.35,
+  "cd": 0.29,
+  "cl": 0.85,
+  "area": 1.92,
+  "gear": 8.2,
+  "wheel_d": 0.71,
+  "clearance": 0.105,
+  "travel": 0.11
+ },
+ "D": {
+  "name": "Off-Road Adventure",
+  "mass": 1519.6112996566417,
+  "power_kw": 620,
+  "torque": 1500,
+  "mu": 0.95,
+  "cd": 0.38,
+  "cl": 0.0,
+  "area": 2.45,
+  "gear": 8.2,
+  "wheel_d": 0.8,
+  "clearance": 0.28,
+  "travel": 0.3
+ },
+ "E": {
+  "name": "Autonomous Future Edition (2035)",
+  "mass": 1344.0614566491229,
+  "power_kw": 800,
+  "torque": 1300,
+  "mu": 1.25,
+  "cd": 0.21,
+  "cl": 0.6,
+  "area": 1.92,
+  "gear": 8.2,
+  "wheel_d": 0.71,
+  "clearance": 0.105,
+  "travel": 0.11
+ }
+}

@@ -1,20 +1,35 @@
-# 🏎️ HYPERCAR-X — Parametric Electric Hypercar Engineering Platform
+# 🏎️ HYPERCAR-X: Parametric Electric Hypercar
 
-A concept-level vehicle engineering package where **one master parameter table (`params.json`) drives everything**: mass and CG, aerodynamics, launch and braking simulation, suspension tuning, steering geometry, chassis FEA, range, reliability, cost, and a **drivable 3D simulator**.
+[![Simulate](https://github.com/jaineil32624/hypercar-x/actions/workflows/simulate.yml/badge.svg)](https://github.com/jaineil32624/hypercar-x/actions/workflows/simulate.yml)
+[![Build apps](https://github.com/jaineil32624/hypercar-x/actions/workflows/build-apps.yml/badge.svg)](https://github.com/jaineil32624/hypercar-x/actions/workflows/build-apps.yml)
 
-**▶ Drive it:** `docs/index.html` · **▶ Presentation:** `docs/presentation.html` · **🎬 Animation:** `media/hypercar_x_drive.mp4`
-(enable GitHub Pages → branch `main`, folder `/docs` to get live links)
+| 🌐 Website | 🏁 Drive in browser | 📱 Android APK | 🖥️ Windows | 📊 Presentation |
+|---|---|---|---|---|
+| [jaineil32624.github.io/hypercar-x](https://jaineil32624.github.io/hypercar-x/) | [drive.html](https://jaineil32624.github.io/hypercar-x/drive.html) | [hypercar-x.apk](https://github.com/jaineil32624/hypercar-x/releases/latest/download/hypercar-x.apk) | [HypercarX-windows.zip](https://github.com/jaineil32624/hypercar-x/releases/latest/download/HypercarX-windows.zip) | [presentation.html](https://jaineil32624.github.io/hypercar-x/presentation.html) |
 
-![HYPERCAR-X Blender render](media/render_f070.png)
+![HYPERCAR-X](docs/gallery/01_front_three_quarter.jpg)
 
-## Blender model, animation & texture baking
-- `blender/HypercarX.blend`: lofted super-ellipse body, full rig (root → body pitch/roll/heave → suspension → steer → spin), active rear wing pivot, 300-frame launch/brake/turn animation with tracking DoF camera
+| | | |
+|---|---|---|
+| ![](docs/gallery/thumb_02_rear_three_quarter.jpg) | ![](docs/gallery/thumb_09_exploded_view.jpg) | ![](docs/gallery/thumb_06_wheel_brake_detail.jpg) |
+| ![](docs/gallery/thumb_03_side_profile.jpg) | ![](docs/gallery/thumb_10_clay_form_study.jpg) | ![](docs/gallery/thumb_11_night_lights.jpg) |
+| ![](docs/gallery/thumb_05_top_down.jpg) | ![](docs/gallery/thumb_07_rear_wing_diffuser.jpg) | ![](docs/gallery/thumb_08_road_low_angle.jpg) |
+
+A concept-level vehicle engineering package where **one master parameter table (`params.json`) drives everything**: mass and CG, aerodynamics, launch and braking simulation, suspension, steering, chassis FEA, range, reliability and cost. On top of that sit a **rigged, textured Blender model**, a **drivable browser simulator** and a **Godot 4 app for Android and Windows**.
+
+## Godot app (`godot/`)
+Godot 4.3 project using the Blender-baked GLB with `VehicleBody3D` physics. Mass, power, torque, grip, drag and downforce come from the engineering model (`godot/variants.json`).
+- Touch pads (GAS, BRAKE, steer) plus keyboard (WASD or arrows)
+- Garage: cycle variants, tyres, aero and motors, with pros and cons on screen
+- Drag strip with a ¼-mile gate, slalom, handling ring and jump ramp; tyre smoke; active wing
+- `.github/workflows/build-apps.yml` exports the **APK** and a **Windows .exe** and publishes them as a GitHub Release
+
+## Blender model, animation & texture baking (`blender/`)
+- `HypercarX.blend`: lofted super-ellipse body, full rig (root → body pitch/roll/heave → suspension → steer → spin), active rear-wing pivot, 300-frame launch/brake/turn animation with a tracking depth-of-field camera, studio cyclorama scene
 - Procedural materials: pearl flake clear-coat paint, 2×2 twill carbon, chevron-tread tyre, brushed anisotropic alloy, drilled carbon-ceramic discs, emissive lights, asphalt
-- Cycles GPU bake → `blender/textures/` (diffuse, roughness, normal for paint, carbon, tyre, rim, disc: 15 maps)
-- Baked materials exported to `docs/hypercar_x.glb`, viewable in the simulator ("Blender model" button)
-
-## Garage: swappable parts with pros & cons
-Wheels, tyres, aero, motors, battery and brakes can each be swapped live in the simulator, with an animated jack-up swap and an instant stat delta. Each option lists its pros and cons; see the presentation for the full trade-off table.
+- Cycles GPU bake → `blender/textures/` (diffuse, roughness and normal maps for paint, carbon, tyre, rim and disc: 15 maps)
+- Baked materials exported to `docs/hypercar_x.glb` for the web simulator and the Godot app
+- Gallery: 11 Cycles renders (studio, road, detail, exploded, clay, night) and a 360° turntable in `docs/gallery/`
 
 ## Five variants from one platform
 | Metric | A Urban Performance | B Track Hypercar | C Electric Hypercar | D Off-Road Adventure | E Autonomous Future Edition (2035) |

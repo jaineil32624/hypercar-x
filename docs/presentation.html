@@ -45,6 +45,10 @@ nav button{background:var(--card);color:var(--txt);border:1px solid var(--line);
 <li>Active rear wing on its own pivot: DRS flat at speed, 38° air-brake under braking</li>
 <li>300-frame drive animation: launch, squat, brake dive, steer, tracking camera with DoF</li></ul></div></div></section>
 
+<section><h2 class="a"><small>Gallery</small>Studio, detail &amp; exploded renders</h2>
+<div class="grid g4 a"><img src="gallery/thumb_01_front_three_quarter.jpg" alt="Front three-quarter"><img src="gallery/thumb_02_rear_three_quarter.jpg" alt="Rear three-quarter"><img src="gallery/thumb_09_exploded_view.jpg" alt="Exploded view"><img src="gallery/thumb_10_clay_form_study.jpg" alt="Clay form study">
+<img src="gallery/thumb_06_wheel_brake_detail.jpg" alt="Wheel detail"><img src="gallery/thumb_07_rear_wing_diffuser.jpg" alt="Wing and diffuser"><img src="gallery/thumb_05_top_down.jpg" alt="Top down"><img src="gallery/thumb_11_night_lights.jpg" alt="Night lights"></div></section>
+
 <section><h2 class="a"><small>Animation</small>Launch → brake → turn-in</h2>
 <video class="a" src="img/hypercar_x_drive.mp4" autoplay muted loop playsinline style="max-height:66vh"></video></section>
 
@@ -177,7 +181,7 @@ nav button{background:var(--card);color:var(--txt);border:1px solid var(--line);
 <div class="flow a"><div class="card"><b class="k">Now</b><br>Parametric model, sim, Blender asset</div><i>→</i><div class="card"><b class="k">Next</b><br>OpenFOAM CFD, shell FEA of tub, lap-time sim</div><i>→</i><div class="card"><b class="k">Then</b><br>Scale 1:10 RC prototype, telemetry digital twin</div><i>→</i><div class="card"><b class="k">2035</b><br>Solid-state pack, L4 autonomy, OTA chassis tuning</div></div>
 <h1 class="a" style="margin-top:6vh;font-size:clamp(28px,4vw,52px)">Thank you</h1></section>
 </div>
-<nav><button id="prev">◀</button><span id="num"></span><button id="next">▶</button></nav>
+<nav><a href="index.html" style="color:var(--dim);text-decoration:none">Home</a><button id="prev">◀</button><span id="num"></span><button id="next">▶</button></nav>
 <script>
 const deck=document.getElementById('deck'),S=[...deck.children];let i=0;
 function go(n){i=Math.max(0,Math.min(S.length-1,n));deck.style.transform=`translateX(${-i*100}vw)`;S.forEach((s,k)=>s.classList.toggle('on',k===i));

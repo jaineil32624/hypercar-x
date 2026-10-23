@@ -1,0 +1,57 @@
+name: Build apps (Android APK + Windows)
+on:
+  push:
+    branches: [main]
+    paths: ["godot/**", ".github/workflows/build-apps.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+env:
+  GODOT_VERSION: "4.3"
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    container: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move Godot templates & editor settings into $HOME
+        run: |
+          mkdir -v -p ~/.local/share/godot/export_templates/ ~/.config/
+          cp -r /root/.config/godot ~/.config/godot || true
+          cp -r /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+      - name: Create debug keystore
+        run: keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore $GITHUB_WORKSPACE/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+      - name: Import project
+        run: cd godot && godot --headless --import || true
+      - name: Export Android APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p build/windows
+          cd godot && godot --headless --verbose --export-debug "Android" ../build/hypercar-x.apk
+          ls -la ../build
+      - name: Export Windows
+        run: |
+          cd godot && godot --headless --export-release "Windows" ../build/windows/HypercarX.exe
+          cd ../build && zip -r HypercarX-windows.zip windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hypercar-x-apps
+          path: |
+            build/hypercar-x.apk
+            build/HypercarX-windows.zip
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.${{ github.run_number }}
+          name: HYPERCAR-X Drive v1.${{ github.run_number }}
+          make_latest: true
+          body: |
+            Drivable HYPERCAR-X built in Godot 4.3 with the Blender-baked model.
+            • **Android:** download `hypercar-x.apk`, open it, allow "install unknown apps".
+            • **Windows:** unzip `HypercarX-windows.zip` and run `HypercarX.exe`.
+          files: |
+            build/hypercar-x.apk
+            build/HypercarX-windows.zip
