@@ -35,7 +35,7 @@ select,button{background:#101824;color:var(--txt);border:1px solid var(--line);b
 <canvas id="c"></canvas>
 <div id="top" class="hud"><h1>HYPERCAR-X</h1>
  <div style="color:var(--dim)">Physics driven by the same parameter table as the engineering model.</div>
- <div style="margin:8px 0"><select id="variant"></select> <button id="reset">Reset</button> <button id="launch">Launch test</button> <button id="blend">Blender model</button> <a href="index.html" style="color:var(--acc)">Home</a></div>
+ <div style="margin:8px 0"><select id="variant"></select> <button id="reset">Reset</button> <button id="launch">Launch test</button> <button id="blend">Blender model</button> <button id="gbtn">Garage</button> <a href="index.html" style="color:var(--acc)">Home</a></div>
  <div style="color:var(--dim)">W/↑ throttle · S/↓ brake · A D steer · Space handbrake · C camera · G garage</div>
 </div>
 <div id="garage" class="hud"><h2>GARAGE · SWAP PARTS</h2><div id="slots"></div></div>
@@ -325,6 +325,8 @@ function applyGlb() { if (glb) glb.visible = useGlb; car.children.forEach(c => c
 const _loop2 = loop;
 loop = function (now) { if (glb && useGlb) { glb.position.copy(car.position); glb.rotation.copy(car.rotation);
   for (const s2 of glbSpins) s2.rotation.z -= st.v / 60 / (P.Wheel_Diameter / 2); } _loop2(now); };
+if (innerWidth < 700) document.getElementById('garage').classList.add('hide');
+document.getElementById('gbtn').onclick = () => document.getElementById('garage').classList.toggle('hide');
 buildCar(); requestAnimationFrame(loop);
 </script>
 </body>
