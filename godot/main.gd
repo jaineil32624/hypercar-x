@@ -219,8 +219,8 @@ func _build_car() -> void:
 	_collect(inst)
 
 	# physics wheels (no meshes; GLB wheels are the visuals)
-	var positions := {"FL": Vector3(0.855, 0.56, 1.39), "FR": Vector3(-0.855, 0.56, 1.39),
-		"RL": Vector3(0.83, 0.56, -1.39), "RR": Vector3(-0.83, 0.56, -1.39)}
+	var positions := {"FL": Vector3(0.855, 0.48, 1.39), "FR": Vector3(-0.855, 0.48, 1.39),
+		"RL": Vector3(0.83, 0.48, -1.39), "RR": Vector3(-0.83, 0.48, -1.39)}
 	for tag in ["FL", "FR", "RL", "RR"]:
 		var w := VehicleWheel3D.new()
 		w.name = "W_" + tag
@@ -302,7 +302,7 @@ func _apply_params() -> void:
 	}
 	car.mass = P["mass"]
 	for w in wheels:
-		w.wheel_friction_slip = 0.8 * P["mu"]  # tuned so Godot 0-60 matches the Python model
+		w.wheel_friction_slip = 0.6 * P["mu"]  # tuned so Godot 0-60 matches the Python model
 		w.suspension_max_force = P["mass"] * G * 1.6
 	if wing:
 		wing.visible = part_idx["Aero"] != 2
